@@ -37,6 +37,23 @@ def main():
             _, frame = vc.read()
             frame = cv2.resize(frame, VIDEO_SCREEN_SIZE)
 
+            detector = cv2.SimpleBlobDetector_create()
+            keypoints = detector.detect(frame)
+
+            location_blobs = [(int(keypoint.pt[0]), int(keypoint.pt[1])) for keypoint in keypoints]
+
+            
+
+            for location_blob in location_blobs:
+                frame = cv2.circle(frame, location_blob, 1, (0,0,255), 2)
+
+
+
+            frame = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+
+
+
+
             if frame is None:
                 logging.warning(
                     "Frame is of type NoneType, -> error with /dev/usb0 -> reset Raspberry..."
