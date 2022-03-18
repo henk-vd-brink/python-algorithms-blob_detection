@@ -1,14 +1,76 @@
 import multiprocessing as mp
+import queue, time
 import cv2, io, traceback, logging, os
 from flask import Flask, render_template, Response
 import numpy as np
 
+import logging
+
 VIDEO_SCREEN_SIZE = (640, 480)
 
 from . import functions as f
+from .ellipse import LsqEllipse
+
+WIDTH_CIRCLE = 0.60 # meter
+DIAGONAL_FOV_ANGLE_X = 78 # degree
+DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 
 
-def main():
+def detect(queue_s2d, queue_d2s):
+    params = cv2.SimpleBlobDetector_Params()
+    params.filterByArea = True
+    params.minArea = 80
+
+    detector = cv2.SimpleBlobDetector_create(params)
+    
+    while True:
+        frame = queue_s2d.get()
+        keypoints = detector.detect(frame)
+    
+        number_of_blobs = len(keypoints)
+        location_blobs = np.array([[keypoint.pt[0], keypoint.pt[1]] for keypoint in keypoints])
+
+        if location_blobs.size > 0:
+
+            for i in range(number_of_blobs):
+                frame = cv2.circle(frame, (int(location_blobs[i,0]), int(location_blobs[i,1])), 1, (0, 0, 255), 2)
+        
+            try:  
+                reg = LsqEllipse().fit(location_blobs)
+                center, width, height, phi = reg.as_parameters()
+
+                frame = cv2.circle(frame, (int(center[0]), int(center[1])), 1, (0, 255, 0), 5)
+                frame = cv2.ellipse(
+                    frame,
+                    (int(center[0]), int(center[1])),
+                    (int(width), int(height)),
+                    phi * 180 / np.pi,
+                    0,
+                    360,
+                    (0, 255, 0),
+                    2,
+                )
+
+                half_width = max(VIDEO_SCREEN_SIZE[0] / (2 * width), VIDEO_SCREEN_SIZE[1] / (2 * height)) * WIDTH_CIRCLE / 2
+                height = half_width / np.tan(np.pi / 180 / 2 * DIAGONAL_FOV_ANGLE_X)
+
+                frame = cv2.putText(frame, f"Height: {int(100 * height)}cm", (10,30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
+
+            except Exception:
+                pass
+
+        frame = cv2.drawKeypoints(
+            frame,
+            keypoints,
+            np.array([]),
+            (0, 0, 255),
+            cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+        )
+        
+        queue_d2s.put(frame)
+
+
+def stream(queue_s2d, queue_d2s):
     app = Flask(__name__)
 
     class VideoCapture(cv2.VideoCapture):
@@ -40,50 +102,14 @@ def main():
             _, frame = vc.read()
             frame = cv2.resize(frame, VIDEO_SCREEN_SIZE)
 
-            params = cv2.SimpleBlobDetector_Params()
-            params.filterByArea = True
-            params.minArea = 80
+            if queue_s2d.empty():
+                queue_s2d.put(frame)
 
-            detector = cv2.SimpleBlobDetector_create(params)
-            keypoints = detector.detect(frame)
-
-            location_blobs = [
-                (int(keypoint.pt[0]), int(keypoint.pt[1])) for keypoint in keypoints
-            ]
-
-            for location_blob in location_blobs:
-                frame = cv2.circle(frame, location_blob, 1, (0, 0, 255), 2)
-
-            ellipse = f.determine_optimal_circle(location_blobs)
-
-            try:
-
-                frame = cv2.circle(frame, (ellipse[0], ellipse[1]), 1, (0, 255, 0), 5)
-                frame = cv2.ellipse(
-                    frame,
-                    (ellipse[0], -ellipse[1]),
-                    (ellipse[2], ellipse[3]),
-                    ellipse[4],
-                    0,
-                    360,
-                    (255, 0, 0),
-                    2,
-                )
-            except Exception:
-                pass
-
-            frame = cv2.drawKeypoints(
-                frame,
-                keypoints,
-                np.array([]),
-                (0, 0, 255),
-                cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
-            )
-
-            if frame is None:
-                logging.warning(
-                    "Frame is of type NoneType, -> error with /dev/usb0 -> reset Raspberry..."
-                )
+            if not queue_d2s.empty():
+                frame_mask = queue_d2s.get()
+                
+            frame_bool_mask = frame_mask > 0
+            frame[frame_bool_mask] = frame_mask[frame_bool_mask]
 
             _, image_buffer = cv2.imencode(".jpg", frame)
             io_buf = io.BytesIO(image_buffer)
@@ -93,9 +119,19 @@ def main():
                 b"Content-Type: image/jpeg\r\n\r\n" + io_buf.read() + b"\r\n"
             )
 
-    with VideoCapture("test.mp4") as vc:
+    with VideoCapture(0) as vc:
         app.run(host="0.0.0.0", threaded=True)
 
 
 if __name__ == "__main__":
-    main()
+    queue_s2d = mp.Queue()
+    queue_d2s = mp.Queue()
+
+    process_stream = mp.Process(target=stream, args=(queue_s2d, queue_d2s))
+    process_stream.start()
+
+
+    process_detect = mp.Process(target=detect, args=(queue_s2d, queue_d2s))
+    process_detect.start()
+
+    # main()
