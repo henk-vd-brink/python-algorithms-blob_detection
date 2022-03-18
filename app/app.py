@@ -5,6 +5,9 @@ import numpy as np
 
 VIDEO_SCREEN_SIZE = (640, 480)
 
+from . import functions as f
+
+
 def main():
     app = Flask(__name__)
 
@@ -37,22 +40,45 @@ def main():
             _, frame = vc.read()
             frame = cv2.resize(frame, VIDEO_SCREEN_SIZE)
 
-            detector = cv2.SimpleBlobDetector_create()
+            params = cv2.SimpleBlobDetector_Params()
+            params.filterByArea = True
+            params.minArea = 80
+
+            detector = cv2.SimpleBlobDetector_create(params)
             keypoints = detector.detect(frame)
 
-            location_blobs = [(int(keypoint.pt[0]), int(keypoint.pt[1])) for keypoint in keypoints]
-
-            
+            location_blobs = [
+                (int(keypoint.pt[0]), int(keypoint.pt[1])) for keypoint in keypoints
+            ]
 
             for location_blob in location_blobs:
-                frame = cv2.circle(frame, location_blob, 1, (0,0,255), 2)
+                frame = cv2.circle(frame, location_blob, 1, (0, 0, 255), 2)
 
+            ellipse = f.determine_optimal_circle(location_blobs)
 
+            try:
 
-            frame = cv2.drawKeypoints(frame, keypoints, np.array([]), (0,0,255), cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+                frame = cv2.circle(frame, (ellipse[0], ellipse[1]), 1, (0, 255, 0), 5)
+                frame = cv2.ellipse(
+                    frame,
+                    (ellipse[0], -ellipse[1]),
+                    (ellipse[2], ellipse[3]),
+                    ellipse[4],
+                    0,
+                    360,
+                    (255, 0, 0),
+                    2,
+                )
+            except Exception:
+                pass
 
-
-
+            frame = cv2.drawKeypoints(
+                frame,
+                keypoints,
+                np.array([]),
+                (0, 0, 255),
+                cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS,
+            )
 
             if frame is None:
                 logging.warning(
@@ -67,8 +93,9 @@ def main():
                 b"Content-Type: image/jpeg\r\n\r\n" + io_buf.read() + b"\r\n"
             )
 
-    with VideoCapture(0) as vc:
+    with VideoCapture("test.mp4") as vc:
         app.run(host="0.0.0.0", threaded=True)
+
 
 if __name__ == "__main__":
     main()
