@@ -35,8 +35,9 @@ def detect(queue_s2d, queue_d2s):
             for i in range(number_of_blobs):
                 frame = cv2.circle(frame, (int(location_blobs[i,0]), int(location_blobs[i,1])), 1, (0, 0, 255), 2)
         
-            # try:  
+            t0 = time.time()
             center, width, height, phi = ellipse.fit(location_blobs)
+            logging.warning(time.time() - t0)
 
             frame = cv2.circle(frame, (int(center[0]), int(center[1])), 1, (0, 255, 0), 5)
             frame = cv2.ellipse(
@@ -54,9 +55,6 @@ def detect(queue_s2d, queue_d2s):
             height = half_width / np.tan(np.pi / 180 / 2 * DIAGONAL_FOV_ANGLE_X)
 
             frame = cv2.putText(frame, f"Height: {int(100 * height)}cm", (10,30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
-
-            # except Exception:
-            #     pass
 
         frame = cv2.drawKeypoints(
             frame,
