@@ -9,7 +9,7 @@ import logging
 VIDEO_SCREEN_SIZE = (640, 480)
 
 from . import functions as f
-from .ellipse import LsqEllipse
+from .ellipse import fit
 
 WIDTH_CIRCLE = 0.60 # meter
 DIAGONAL_FOV_ANGLE_X = 78 # degree
@@ -35,29 +35,28 @@ def detect(queue_s2d, queue_d2s):
             for i in range(number_of_blobs):
                 frame = cv2.circle(frame, (int(location_blobs[i,0]), int(location_blobs[i,1])), 1, (0, 0, 255), 2)
         
-            try:  
-                reg = LsqEllipse().fit(location_blobs)
-                center, width, height, phi = reg.as_parameters()
+            # try:  
+            center, width, height, phi = fit(location_blobs)
 
-                frame = cv2.circle(frame, (int(center[0]), int(center[1])), 1, (0, 255, 0), 5)
-                frame = cv2.ellipse(
-                    frame,
-                    (int(center[0]), int(center[1])),
-                    (int(width), int(height)),
-                    phi * 180 / np.pi,
-                    0,
-                    360,
-                    (0, 255, 0),
-                    2,
-                )
+            frame = cv2.circle(frame, (int(center[0]), int(center[1])), 1, (0, 255, 0), 5)
+            frame = cv2.ellipse(
+                frame,
+                (int(center[0]), int(center[1])),
+                (int(width), int(height)),
+                phi * 180 / np.pi,
+                0,
+                360,
+                (0, 255, 0),
+                2,
+            )
 
-                half_width = max(VIDEO_SCREEN_SIZE[0] / (2 * width), VIDEO_SCREEN_SIZE[1] / (2 * height)) * WIDTH_CIRCLE / 2
-                height = half_width / np.tan(np.pi / 180 / 2 * DIAGONAL_FOV_ANGLE_X)
+            half_width = max(VIDEO_SCREEN_SIZE[0] / (2 * width), VIDEO_SCREEN_SIZE[1] / (2 * height)) * WIDTH_CIRCLE / 2
+            height = half_width / np.tan(np.pi / 180 / 2 * DIAGONAL_FOV_ANGLE_X)
 
-                frame = cv2.putText(frame, f"Height: {int(100 * height)}cm", (10,30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
+            frame = cv2.putText(frame, f"Height: {int(100 * height)}cm", (10,30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
 
-            except Exception:
-                pass
+            # except Exception:
+            #     pass
 
         frame = cv2.drawKeypoints(
             frame,
