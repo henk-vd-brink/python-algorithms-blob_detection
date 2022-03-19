@@ -1,18 +1,6 @@
 import numpy as np
-import numpy.linalg as la
 
-__version__ = '2.1.0-dev'
 def fit(X):
-    """Fit the data
-    Parameters
-    ----------
-    X : array, shape (n_points, 2)
-        Data values for the x-y data pairs to fit
-    Returns
-    -------
-    self : returns an instance of self.
-    """
-
     # extract x-y pairs
     x, y = X.T
 
@@ -30,7 +18,7 @@ def fit(X):
     C1 = np.array([[0., 0., 2.], [0., -1., 0.], [2., 0., 0.]])
 
     # Reduced scatter matrix [eqn. 29]
-    M = la.inv(C1) @ (S1 - S2 @ la.inv(S3) @ S2.T)
+    M = np.linalg.inv(C1) @ (S1 - S2 @ np.linalg.inv(S3) @ S2.T)
 
     # M*|a b c >=l|a b c >. Find eigenvalues and eigenvectors from this
     # equation [eqn. 28]
@@ -44,27 +32,13 @@ def fit(X):
     a1 = eigvec[:, np.nonzero(cond > 0)[0]]
 
     # |d f g> = -S3^(-1) * S2^(T)*|a b c> [eqn. 24]
-    a2 = la.inv(-S3) @ S2.T @ a1
+    a2 = np.linalg.inv(-S3) @ S2.T @ a1
 
     # Eigenvectors |a b c d f g>
     # list of the coefficients describing an ellipse [a,b,c,d,f,g]
     # corresponding to ax**2 + 2bxy + cy**2 + 2dx + 2fy + g
     coef_ = np.vstack([a1, a2])
     coefficients = np.asarray(coef_).ravel()
-
-    """Returns the definition of the fitted ellipse as localized parameters
-    Returns
-    _______
-    center : list
-        [x0, y0]
-    width : float
-        Semimajor axis
-    height : float
-        Semiminor axis
-    phi : float
-        The counterclockwise angle of rotation from the x-axis to the major
-        axis of the ellipse
-    """
 
     # Eigenvectors are the coefficients of an ellipse in general form
     # a*x^2 + 2*b*x*y + c*y^2 + 2*d*x + 2*f*y + g = 0

@@ -9,7 +9,7 @@ import logging
 VIDEO_SCREEN_SIZE = (640, 480)
 
 from . import functions as f
-from .ellipse import fit
+from . import ellipse
 
 WIDTH_CIRCLE = 0.60 # meter
 DIAGONAL_FOV_ANGLE_X = 78 # degree
@@ -36,7 +36,7 @@ def detect(queue_s2d, queue_d2s):
                 frame = cv2.circle(frame, (int(location_blobs[i,0]), int(location_blobs[i,1])), 1, (0, 0, 255), 2)
         
             # try:  
-            center, width, height, phi = fit(location_blobs)
+            center, width, height, phi = ellipse.fit(location_blobs)
 
             frame = cv2.circle(frame, (int(center[0]), int(center[1])), 1, (0, 255, 0), 5)
             frame = cv2.ellipse(
