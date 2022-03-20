@@ -1,6 +1,5 @@
 all: build run
 
-
 build: 
 	docker build -t blob-app .
 

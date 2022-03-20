@@ -1,10 +1,12 @@
 import numpy as np
-from numba import njit
+import numba, os
 from numpy import linalg as la
 
-import logging
+import logging, time
 
-# @njit()
+numba.config.DISABLE_JIT = True if os.environ.get("DISABLE_JIT") in ["True", "true", 1] else False
+
+@numba.njit()
 def get_coefficients(x, y):
     D1 = np.zeros((x.shape[0], 3))
     D1[:, 0] = x ** 2
@@ -42,7 +44,7 @@ def get_coefficients(x, y):
 
     return np.asarray(coef_).ravel()
 
-@njit()
+@numba.njit()
 def get_parameters_from_coefficients(coefficients):
     a = coefficients[0]
     b = coefficients[1] / 2.
@@ -71,43 +73,10 @@ def get_parameters_from_coefficients(coefficients):
     # [eqn. 23] from (**) or [eqn. 26] from (***).
     phi = .5 * np.arctan((2.*b) / (a-c))
 
-    return np.array([center[0], center[1], width, height, phi
+    return np.array([center[0], center[1], width, height, phi])
 
 
 def fit(X):
-    # extract x-y pairs
     x, y = X.T
-
     coefficients = get_coefficients(x, y)
-
-    # Eigenvectors are the coefficients of an ellipse in general form
-    a = coefficients[0]
-    b = coefficients[1] / 2.
-    c = coefficients[2]
-    d = coefficients[3] / 2.
-    f = coefficients[4] / 2.
-    g = coefficients[5]
-
-    # Finding center of ellipse [eqn.19 and 20] from (**)
-    x0 = (c * d - b * f) / (b ** 2 - a * c)
-    y0 = (a * f - b * d) / (b ** 2 - a * c)
-    center = [x0, y0]
-
-    # Find the semi-axes lengths [eqn. 21 and 22] from (**)
-    numerator = 2 * (a * f ** 2 + c * d ** 2 + g * b ** 2 - 2 * b * d * f - a * c * g)
-    denominator1 = (b * b - a * c) * (
-        (c-a) * np.sqrt(1+4*b**2 / ((a-c)*(a-c))) - (c+a)
-    )
-    denominator2 = (b*b - a*c) * (
-        (a-c) * np.sqrt(1+4*b**2 / ((a-c) * (a-c))) - (c+a)
-    )
-    width = np.sqrt(numerator / denominator1)
-    height = np.sqrt(numerator / denominator2)
-
-    # Angle of counterclockwise rotation of major-axis of ellipse to x-axis
-    # [eqn. 23] from (**) or [eqn. 26] from (***).
-    phi = .5 * np.arctan((2.*b) / (a-c))
-
-    logging.warning(get_parameters_from_coefficients(coefficients))
-
-    return center, width, height, phi
+    return get_parameters_from_coefficients(coefficients)
