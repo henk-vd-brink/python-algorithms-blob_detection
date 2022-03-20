@@ -25,7 +25,4 @@ RUN pip3 install -r requirements.txt
 
 COPY app/ app/
 
-ENV NUMBER_OF_DETECTION_THREADS=3
-ENV DISABLE_JIT=0
-
 CMD ["python3", "-m", "app.app"]
