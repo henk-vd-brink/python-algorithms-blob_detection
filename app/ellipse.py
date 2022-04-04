@@ -53,12 +53,10 @@ def get_parameters_from_coefficients(coefficients):
     f = coefficients[4] / 2.
     g = coefficients[5]
 
-    # Finding center of ellipse [eqn.19 and 20] from (**)
     x0 = (c * d - b * f) / (b ** 2 - a * c)
     y0 = (a * f - b * d) / (b ** 2 - a * c)
     center = [x0, y0]
 
-    # Find the semi-axes lengths [eqn. 21 and 22] from (**)
     numerator = 2 * (a * f ** 2 + c * d ** 2 + g * b ** 2 - 2 * b * d * f - a * c * g)
     denominator1 = (b * b - a * c) * (
         (c-a) * np.sqrt(1+4*b**2 / ((a-c)*(a-c))) - (c+a)
@@ -69,10 +67,7 @@ def get_parameters_from_coefficients(coefficients):
     width = np.sqrt(numerator / denominator1)
     height = np.sqrt(numerator / denominator2)
 
-    # Angle of counterclockwise rotation of major-axis of ellipse to x-axis
-    # [eqn. 23] from (**) or [eqn. 26] from (***).
     phi = .5 * np.arctan((2.*b) / (a-c))
-
     return np.array([center[0], center[1], width, height, phi])
 
 

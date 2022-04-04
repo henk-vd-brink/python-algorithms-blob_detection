@@ -7,17 +7,20 @@ import numpy as np
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-VIDEO_SCREEN_SIZE = (640, 480)
+# VIDEO_SCREEN_SIZE = (640, 480)
 # VIDEO_SCREEN_SIZE = (1920, 1080)
-# VIDEO_SCREEN_SIZE = (1280, 720)
+VIDEO_SCREEN_SIZE = (1280, 720)
 
-
-from . import functions as f
-from . import ellipse
+from . import ellipse, circle, circle_gpu
 
 WIDTH_CIRCLE = 0.60 # meter
 DIAGONAL_FOV_ANGLE_X = 78 # degree
 DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
+
+fitting_function = circle_gpu
+
+INPUT_CAPS = "v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoscale ! videoconvert ! appsink"
+
 
 class TimeIt():
     def __init__(self):
@@ -41,13 +44,13 @@ def detect(queue_s2d, queue_d2s):
     # params.maxThreshold = 200
 
     params.filterByArea = True
-    params.minArea = 120
+    params.minArea = 100
 
     # params.filterByCircularity = True
     # params.minCircularity = 0.5
 
-    params.filterByInertia = True
-    params.minInertiaRatio = 0.2
+    # params.filterByInertia = True
+    # params.minInertiaRatio = 0.2
 
 
     detector = cv2.SimpleBlobDetector_create(params)
@@ -66,8 +69,8 @@ def detect(queue_s2d, queue_d2s):
         number_of_blobs = len(keypoints)
         location_blobs = np.array([[keypoint.pt[0], keypoint.pt[1]] for keypoint in keypoints])
 
-        if number_of_blobs > 12:
-            center_x, center_y, ellipse_width, ellipse_height, phi = ellipse.fit(location_blobs)
+        if number_of_blobs > 20:
+            center_x, center_y, ellipse_width, ellipse_height, phi = fitting_function.fit(location_blobs)
     
             half_width = max(VIDEO_SCREEN_SIZE[0] / (2 * ellipse_width), VIDEO_SCREEN_SIZE[1] / (2 * ellipse_height)) * WIDTH_CIRCLE / 2
             height = half_width / np.tan(np.pi / 180 * DIAGONAL_FOV_ANGLE_X / 2 )
@@ -169,7 +172,7 @@ def stream(queue_s2d, queue_d2s):
                 b"Content-Type: image/jpeg\r\n\r\n" + io_buf.read() + b"\r\n"
             )
 
-    with VideoCapture(0) as vc:
+    with VideoCapture(INPUT_CAPS, cv2.CAP_GSTREAMER) as vc:
         app.run(host="0.0.0.0", threaded=True)
 
 
