@@ -25,7 +25,17 @@ RUN apt-get install -y libgstreamer1.0-dev \
 
 # ENV GST_DEBUG=4
 
-CMD gst-launch-1.0 -e v4l2src device=/dev/video0 ! video/x-raw,height=360,width=640,framerate=30/1,format=YUY2 ! decodebin ! videoconvert ! tee name=t \
-						t. ! queue ! x264enc tune=zerolatency ! rtph264pay ! multiudpsink clients="detector:6000,192.168.178.100:6000" sync=false \
-						t. ! queue ! matroskamux  ! filesink location=/media/video-raw-file.mkv
+CMD gst-launch-1.0 -e v4l2src device=/dev/video0 ! video/x-raw,height=1080,width=1920,framerate=5/1,format=YUY2 ! decodebin ! videoconvert ! tee name=t \
+						t. \
+							! queue \
+							! nvvidconv \
+							! 'video/x-raw(memory:NVMM), format=I420, width=1920, height=1080' \
+							! omxh264enc \
+							! video/x-h264,width=1920,height=1080,stream-format=byte-stream,bitrate=5000 \
+							! rtph264pay \
+							! udpsink host=detector port=6000 sync=false \
+						t. \
+							! queue \
+							! matroskamux \
+							! filesink location=/media/video-raw-file.mkv
 
