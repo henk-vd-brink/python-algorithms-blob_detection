@@ -11,7 +11,6 @@ services:
     environment:
       - NUMBER_OF_DETECTION_THREADS=1
       - DISABLE_JIT=1
-      - GST_DEBUG=4
     depends_on:
       - streamer
     privileged: true
