@@ -1,0 +1,37 @@
+<html>
+
+<head>
+  <style>
+    .parent {
+      display: flex;
+    }
+
+    .data {
+      margin-left: 2rem;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="parent">
+    <img src="{{ url_for('video_feed') }}">
+
+    <div class="data">
+      <pre id="mqtt_message">MQTT FEED</pre>
+    </div>
+  </div>
+</body>
+
+
+<script>
+  var mqtt_message = document.getElementById("mqtt_message");
+
+  setInterval(() => {
+    fetch("{{ url_for('mqtt_feed') }}")
+      .then(response => {
+        response.text().then(t => { mqtt_message.innerHTML = JSON.stringify(JSON.parse(t), null, 4) })
+      });
+  }, 100);  
+</script>
+
+</html>
