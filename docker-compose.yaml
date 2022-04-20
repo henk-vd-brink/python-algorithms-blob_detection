@@ -23,6 +23,7 @@ services:
       - "/dev/video0"
     volumes:
       - ./media:/media
+    privileged: true
 
     
     
