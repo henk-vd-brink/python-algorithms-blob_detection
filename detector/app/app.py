@@ -1,25 +1,57 @@
 import multiprocessing as mp
-import queue, time, os
-import cv2, io, traceback, logging, os
+import queue, time, os, json, time, datetime
+import cv2, io, traceback, os
 from flask import Flask, render_template, Response
 import numpy as np
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-# VIDEO_SCREEN_SIZE = (640, 480)
-# VIDEO_SCREEN_SIZE = (1920, 1080)
-VIDEO_SCREEN_SIZE = (1280, 720)
+logger = logging.getLogger(__name__)
 
-from . import ellipse, circle, circle_gpu
+VIDEO_SCREEN_SIZE = (640, 480)
+# VIDEO_SCREEN_SIZE = (1920, 1080)
+# VIDEO_SCREEN_SIZE = (1280, 720)
+
+from . import ellipse, circle, mqtt
 
 WIDTH_CIRCLE = 0.60 # meter
 DIAGONAL_FOV_ANGLE_X = 78 # degree
 DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 
-fitting_function = circle_gpu
+fitting_function = ellipse
 
-INPUT_CAPS = "v4l2src device=/dev/video0 ! video/x-raw,framerate=30/1 ! videoscale ! videoconvert ! appsink"
+INPUT_CAPS = "udpsrc port=6000 ! " \
+       "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
+       "rtph264depay ! " \
+       "avdec_h264 ! " \
+       "videoconvert ! " \
+       "video/x-raw,format=BGR ! " \
+       "appsink drop=1"
+
+# INPUT_CAPS = "v4l2src device=/dev/video0 ! video/x-raw,width=1280,height=720 ! videoscale ! videoconvert ! appsink"
+
+mqtt_configuration = mqtt.Configuration(
+    broker_ip_address="40.114.234.93",
+    broker_port=1883,
+    broker_publish_topic="/video_aggregates",
+    broker_subscribe_topics=["/dashboard_information/live"]
+)
+mqtt_client = mqtt.Client(config=mqtt_configuration)
+mqtt_client.connect()
+
+
+def mqtt_stream(queue_m2s):
+
+    @mqtt.ParseIncomingMessage()
+    def on_message(client, user_data, message, parsed_message):
+        try:
+            queue_m2s.put_nowait(json.dumps(parsed_message))
+        except Exception:
+            pass
+        
+    mqtt_client.bind_on_message(on_message_function_object=on_message)
+    mqtt_client.loop_forever()
 
 
 class TimeIt():
@@ -103,14 +135,28 @@ def detect(queue_s2d, queue_d2s):
             processing_height_bar = processing_freq * "|"
             did_detect = True
 
+            mqtt_message = dict(
+                time_stamp = "",
+                height = detected_height,
+                height_method = "dots",
+                number_of_detected_dots = number_of_blobs,
+                distance_to_center = -1
+            )
+
+            mqtt_client.publish(
+                mqtt_configuration.broker_publish_topic,
+                json.dumps(mqtt_message)
+            )
+
+
         cv2.putText(frame_mask, f"Height: {detected_height} cm", (10,30), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
         cv2.putText(frame_mask, f"dPS: {processing_height_bar}", (10,120), fontFace=cv2.FONT_HERSHEY_DUPLEX, fontScale=1, color=(0, 255, 0),thickness=1)
         
         queue_d2s.put((frame_mask, did_detect))
 
 
-def stream(queue_s2d, queue_d2s):
-    app = Flask(__name__)
+def stream(queue_s2d, queue_d2s, queue_m2s):
+    app = Flask(__name__, static_folder=os.path.abspath('./static'))
 
     class VideoCapture(cv2.VideoCapture):
         def __init__(self, *args, **kwargs):
@@ -126,6 +172,20 @@ def stream(queue_s2d, queue_d2s):
     def index():
         """Video streaming home page."""
         return render_template("index.html")
+
+    @app.route('/mqtt_feed')
+    def mqtt_feed():
+        message = ""
+
+        def generate():
+            global message
+            try: 
+                message = queue_m2s.get_nowait()
+            except Exception:
+                pass
+            return message
+
+        return Response(generate(), mimetype='text') 
 
     @app.route("/video_feed")
     def video_feed():
@@ -180,8 +240,13 @@ if __name__ == "__main__":
     queue_s2d = mp.Queue()
     queue_d2s = mp.Queue()
 
-    process_stream = mp.Process(target=stream, args=(queue_s2d, queue_d2s))
+    queue_m2s = mp.Queue(1)
+
+    process_stream = mp.Process(target=stream, args=(queue_s2d, queue_d2s, queue_m2s))
     process_stream.start()
+
+    mqtt_stream = mp.Process(target=mqtt_stream, args=(queue_m2s,))
+    mqtt_stream.start()
 
     detection_threads = []
     NUMBER_OF_DETECTION_THREADS = int(os.environ.get("NUMBER_OF_DETECTION_THREADS", 1))

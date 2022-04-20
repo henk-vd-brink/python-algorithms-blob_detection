@@ -1,6 +1,0 @@
-Flask==2.0.2
-#opencv-python==4.5.4.60
-#cmake==3.22.1
-numba
-scipy
-cupy-cuda102
