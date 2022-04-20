@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
-VIDEO_SCREEN_SIZE = (1920, 1080)
+VIDEO_SCREEN_SIZE = (640, 480)
 # VIDEO_SCREEN_SIZE = (1920, 1080)
 # VIDEO_SCREEN_SIZE = (1280, 720)
 
@@ -22,7 +22,7 @@ DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 fitting_function = ellipse
 
 INPUT_CAPS = "udpsrc port=6000 ! " \
-        "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96,format=I420 ! " \
+        "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
         "rtph264depay ! " \
         "avdec_h264 ! " \
         "videoconvert ! " \

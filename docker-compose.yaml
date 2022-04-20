@@ -13,7 +13,6 @@ services:
       - DISABLE_JIT=1
     depends_on:
       - streamer
-    privileged: true
 
   streamer:
     container_name: streamer
@@ -24,7 +23,6 @@ services:
       - "/dev/video0"
     volumes:
       - ./media:/media
-    privileged: true
 
     
     
