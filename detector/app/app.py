@@ -22,14 +22,12 @@ DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 fitting_function = ellipse
 
 INPUT_CAPS = "udpsrc port=6000 ! " \
-       "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
-       "rtph264depay ! " \
-       "avdec_h264 ! " \
-       "videoconvert ! " \
-       "video/x-raw,format=BGR ! " \
-       "appsink drop=1"
-
-# INPUT_CAPS = "v4l2src device=/dev/video0 ! video/x-raw,width=1280,height=720 ! videoscale ! videoconvert ! appsink"
+        "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
+        "rtph264depay ! " \
+        "avdec_h264 ! " \
+        "videoconvert ! " \
+        "video/x-raw,format=BGR ! " \
+        "appsink drop=1"
 
 mqtt_configuration = mqtt.Configuration(
     broker_ip_address="40.114.234.93",
@@ -182,7 +180,7 @@ def stream(queue_s2d, queue_d2s, queue_m2s):
             try: 
                 message = queue_m2s.get_nowait()
             except Exception:
-                pass
+                message = ""
             return message
 
         return Response(generate(), mimetype='text') 

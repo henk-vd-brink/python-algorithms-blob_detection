@@ -2,6 +2,7 @@ version: "3"
 
 services:
   detector:
+    container_name: detector
     build:
       context: detector
       dockerfile: dockerfile
@@ -10,17 +11,16 @@ services:
     environment:
       - NUMBER_OF_DETECTION_THREADS=1
       - DISABLE_JIT=1
-    privileged: true
     depends_on:
       - streamer
 
   streamer:
+    container_name: streamer
     build:
       context: streamer
       dockerfile: dockerfile
     devices:
       - "/dev/video0"
-    privileged: true
     volumes:
       - ./media:/media
 

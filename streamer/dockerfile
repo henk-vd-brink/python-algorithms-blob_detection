@@ -26,9 +26,9 @@ RUN apt-get install -y libgstreamer1.0-dev \
 
 WORKDIR /code
 
-ENV GST_DEBUG=4
+# ENV GST_DEBUG=4
 
 CMD gst-launch-1.0 -e v4l2src device=/dev/video0 ! video/x-raw,height=360,width=640,framerate=30/1,format=YUY2 ! decodebin ! videoconvert ! tee name=t \
-						t. ! queue ! x264enc tune=zerolatency ! rtph264pay ! udpsink host=detector port=6000 sync=false \
-						t. ! queue ! filesink location=/media/video-raw-file.YUY2
+						t. ! queue ! x264enc tune=zerolatency ! rtph264pay ! udpsink host=detector port=6000 sync=false
+						# t. ! queue ! mp4mux ! filesink location=/media/video-raw-file.mp4
 
