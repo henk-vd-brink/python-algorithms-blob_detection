@@ -13,13 +13,14 @@ VIDEO_SCREEN_SIZE = (640, 480)
 # VIDEO_SCREEN_SIZE = (1920, 1080)
 # VIDEO_SCREEN_SIZE = (1280, 720)
 
-from . import ellipse, circle, mqtt
+from . import circle as fitter
+from . import mqtt
 
 WIDTH_CIRCLE = 0.60 # meter
 DIAGONAL_FOV_ANGLE_X = 78 # degree
 DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 
-fitting_function = ellipse
+fitting_function = fitter
 
 INPUT_CAPS = "udpsrc port=6000 ! " \
             "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
@@ -74,7 +75,7 @@ def detect(queue_s2d, queue_d2s):
     # params.maxThreshold = 200
 
     params.filterByArea = True
-    params.minArea = 100
+    params.minArea = 130
 
     # params.filterByCircularity = True
     # params.minCircularity = 0.5
@@ -134,7 +135,7 @@ def detect(queue_s2d, queue_d2s):
             did_detect = True
 
             mqtt_message = dict(
-                time_stamp = "",
+                time_stamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
                 height = detected_height,
                 height_method = "dots",
                 number_of_detected_dots = number_of_blobs,

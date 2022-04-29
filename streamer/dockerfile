@@ -37,6 +37,8 @@ CMD gst-launch-1.0 -e v4l2src device=/dev/video0 \
 							! x264enc tune=zerolatency \
 							! rtph264pay \
 							! multiudpsink clients="detector:6000" sync=false \
+						t. \
+							! fakesink 
 						# t. \
 						# 	\! queue \
 						# 	\! matroskamux \

@@ -1,12 +1,13 @@
+import os
 import numpy as np
-import numba, os
+# import numba, os
 from numpy import linalg as la
 
 import logging, time
 
-numba.config.DISABLE_JIT = True if os.environ.get("DISABLE_JIT") in ["True", "true", 1] else False
+# numba.config.DISABLE_JIT = True if os.environ.get("DISABLE_JIT") in ["True", "true", 1] else False
 
-@numba.njit()
+# @numba.njit()
 def get_coefficients(x, y):
     x_m = np.mean(x)
     y_m = np.mean(y)

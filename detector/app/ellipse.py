@@ -1,12 +1,13 @@
+import os
 import numpy as np
-import numba, os
+# import numba, os
 from numpy import linalg as la
 
 import logging, time
 
-numba.config.DISABLE_JIT = True if os.environ.get("DISABLE_JIT") in ["True", "true", 1] else False
+# numba.config.DISABLE_JIT = True if os.environ.get("DISABLE_JIT") in ["True", "true", 1] else False
 
-@numba.njit()
+# @numba.njit()
 def get_coefficients(x, y):
     D1 = np.zeros((x.shape[0], 3))
     D1[:, 0] = x ** 2
@@ -44,7 +45,7 @@ def get_coefficients(x, y):
 
     return np.asarray(coef_).ravel()
 
-@numba.njit()
+# @numba.njit()
 def get_parameters_from_coefficients(coefficients):
     a = coefficients[0]
     b = coefficients[1] / 2.
