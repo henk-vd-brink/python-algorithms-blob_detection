@@ -1,7 +1,7 @@
 Flask==2.0.2
 # opencv-python==4.5.4.60
 cmake==3.22.1
-# numba==0.50.1
+numba==0.50.1
 # scipy==1.7.3
 # cupy-cuda102
 paho-mqtt==1.6.1
