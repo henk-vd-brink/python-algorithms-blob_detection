@@ -18,16 +18,20 @@ services:
       - ./media:/media
       - /dev/bus/usb:/dev/bus/usb
     runtime: nvidia
+    depends_on:
+      - streamer
 
-  # streamer:
-  #   container_name: streamer
-  #   build:
-  #     context: streamer
-  #     dockerfile: dockerfile
-  #   devices:
-  #     - "/dev/video0"
-  #   volumes:
-  #     - ./media:/media
-  #     - /dev/bus/usb:/dev/bus/usb
-  #   runtime: nvidia
+  streamer:
+    container_name: streamer
+    build:
+      context: streamer
+      dockerfile: dockerfile
+    devices:
+      - "/dev/video0"
+    environment:
+      - GST_DEBUG=3
+    volumes:
+      - ./media:/media
+      - /dev/bus/usb:/dev/bus/usb
+    runtime: nvidia
 
