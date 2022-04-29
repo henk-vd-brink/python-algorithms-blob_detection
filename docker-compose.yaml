@@ -8,22 +8,26 @@ services:
       dockerfile: dockerfile
     ports:
       - 5000:5000
+    devices:
+      - "/dev/video0"
     environment:
       - NUMBER_OF_DETECTION_THREADS=1
       - DISABLE_JIT=1
-    depends_on:
-      - streamer
-
-  streamer:
-    container_name: streamer
-    build:
-      context: streamer
-      dockerfile: dockerfile
-    devices:
-      - "/dev/video0"
+      # - GST_DEBUG=4
     volumes:
       - ./media:/media
+      - /dev/bus/usb:/dev/bus/usb
+    runtime: nvidia
 
-    
-    
-    
+  # streamer:
+  #   container_name: streamer
+  #   build:
+  #     context: streamer
+  #     dockerfile: dockerfile
+  #   devices:
+  #     - "/dev/video0"
+  #   volumes:
+  #     - ./media:/media
+  #     - /dev/bus/usb:/dev/bus/usb
+  #   runtime: nvidia
+

@@ -1,4 +1,4 @@
-FROM prominendt/icarus-arm64v8-opencv-4.4.0:cuda102a53
+FROM prominendt/icarus-arm64v8-opencv-4.4.0:basic
 
 WORKDIR /app
 

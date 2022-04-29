@@ -22,12 +22,12 @@ DIAGONAL_FOV_ANGLE_y = DIAGONAL_FOV_ANGLE_X
 fitting_function = ellipse
 
 INPUT_CAPS = "udpsrc port=6000 ! " \
-        "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
-        "rtph264depay ! " \
-        "avdec_h264 ! " \
-        "videoconvert ! " \
-        "video/x-raw,format=BGR ! " \
-        "appsink drop=1"
+            "application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! " \
+            "rtph264depay ! " \
+            "avdec_h264 ! " \
+            "videoconvert ! " \
+            "video/x-raw,format=BGR ! " \
+            "appsink drop=1"
 
 mqtt_configuration = mqtt.Configuration(
     broker_ip_address="40.114.234.93",
